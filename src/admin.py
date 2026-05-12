@@ -93,9 +93,38 @@ async def prune(queue: QueueManager, confirm: bool) -> None:
     print(f"  Pruned {s} sent + {b} bounced emails.")
 
 
+def pause_relay(db_path: str) -> None:
+    """Create the pause marker file to stop the relay worker."""
+    pause_file = Path(db_path).with_suffix(".paused")
+    pause_file.touch()
+    print(f"  Relay paused. Marker file: {pause_file}")
+    print("  The server will continue accepting emails but stop sending them.")
+    print("  Run 'throt-admin resume' to resume sending.")
+
+
+def resume_relay(db_path: str) -> None:
+    """Remove the pause marker file to resume the relay worker."""
+    pause_file = Path(db_path).with_suffix(".paused")
+    if pause_file.exists():
+        pause_file.unlink()
+        print(f"  Relay resumed. Marker file removed: {pause_file}")
+    else:
+        print("  Relay was not paused (no marker file found).")
+
+
 async def run_command(args: argparse.Namespace) -> None:
     """Execute the admin command."""
     config = load_config(args.config)
+
+    # pause/resume don't need the database
+    if args.command == "pause":
+        pause_relay(config.queue.db_path)
+        return
+
+    if args.command == "resume":
+        resume_relay(config.queue.db_path)
+        return
+
     db = await init_db(config.queue.db_path)
     queue = QueueManager(db, config.queue)
 
@@ -144,6 +173,12 @@ def main() -> None:
     # prune
     prune_parser = subparsers.add_parser("prune", help="Remove old sent and bounced emails")
     prune_parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation")
+
+    # pause
+    subparsers.add_parser("pause", help="Pause email sending (server keeps accepting emails)")
+
+    # resume
+    subparsers.add_parser("resume", help="Resume email sending after pause")
 
     args = parser.parse_args()
     asyncio.run(run_command(args))

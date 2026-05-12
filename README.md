@@ -178,12 +178,40 @@ throt-admin list
 throt-admin list --status queued -n 10
 throt-admin list --status bounced
 
+# Pause sending — server keeps accepting emails but stops relaying
+throt-admin pause
+
+# Resume sending after pause
+throt-admin resume
+
 # Clear all emails of a given status (with confirmation)
 throt-admin clear --status queued --yes
 
 # Prune old sent and bounced emails
 throt-admin prune --yes
 ```
+
+### Pause / Resume
+
+The `pause` command creates a marker file next to the queue database. The relay
+worker checks this file before processing each email — when it exists, the
+worker skips sending entirely and loops back immediately. The inbound SMTP
+server keeps running and accepting new emails into the queue.
+
+```bash
+# Stop sending, keep accepting
+throt-admin pause
+
+# ... emails accumulate in the queue ...
+
+# Resume sending from where it left off
+throt-admin resume
+```
+
+This is useful for:
+- Upstream SMTP maintenance windows
+- Rate limit resets
+- Debugging delivery issues without losing incoming mail
 
 ## Retry Strategy
 

@@ -5,6 +5,7 @@ __pycache__/
 config.yaml
 queue.db
 *.db
+*.paused
 relay.log
 .eggs/
 *.egg-info/

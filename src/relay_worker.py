@@ -8,6 +8,7 @@ import random
 import re
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate
+from pathlib import Path
 
 import aiosmtplib
 
@@ -25,6 +26,8 @@ class RelayWorker:
         self.config = config
         self._running = False
         self._lock = asyncio.Lock()
+        # Pause marker file — created by throt-admin pause, removed by resume
+        self._pause_file = Path(config.queue.db_path).with_suffix(".paused")
 
     async def start(self) -> None:
         """Start the relay loop. Runs until stopped."""
@@ -54,6 +57,11 @@ class RelayWorker:
 
     async def _process_one(self) -> None:
         """Process a single email through the relay pipeline."""
+        # Check pause marker — if set, skip processing and wait
+        if self._pause_file.exists():
+            await asyncio.sleep(2)
+            return
+
         async with self._lock:
             # Dequeue next email
             email = await self.queue.dequeue_next()

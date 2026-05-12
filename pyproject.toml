@@ -1,0 +1,33 @@
+[project]
+name = "throt-smtp-relay"
+version = "0.1.0"
+description = "Throttled SMTP relay server with persistent queue"
+requires-python = ">=3.10"
+dependencies = [
+    "aiosmtpd>=1.4.0",
+    "aiosmtplib>=2.0.0",
+    "aiosqlite>=0.20.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+throt-relay = "src.main:main"
+throt-admin = "src.admin:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]

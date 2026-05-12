@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+config.yaml
+queue.db
+*.db
+relay.log
+.eggs/
+*.egg-info/
+dist/
+build/
+.venv/
+.pytest_cache/
+.hermes/
+AGENTS.md

@@ -1,0 +1,43 @@
+# Throttled SMTP Relay — Configuration
+# Copy to config.yaml and edit, or use environment variables (see .env.example).
+
+# --- Local SMTP Server (inbound) ---
+local:
+  host: "0.0.0.0"
+  port: 1025
+  hostname: "localhost"
+
+# --- Upstream SMTP Server (outbound) ---
+upstream:
+  host: "smtp.provider.com"
+  port: 587
+  username: ""
+  password: ""
+  # "starttls" (port 587) or "ssl" (port 465)
+  tls: "starttls"
+  timeout: 30
+
+# --- Throttling ---
+throttle:
+  min_delay: 30       # seconds
+  max_delay: 120      # seconds
+
+# --- Queue ---
+queue:
+  db_path: "queue.db"
+  max_size: 10000
+  max_retries: 5
+  retry_base: 60      # base backoff in seconds (doubles each retry)
+  retry_cap: 3600     # maximum backoff in seconds (1 hour)
+
+# --- Bounce / NDR ---
+bounce:
+  enabled: true
+  from: "mailer-daemon@localhost"
+
+# --- Logging ---
+logging:
+  level: "INFO"
+  file: "relay.log"
+  max_bytes: 10485760   # 10 MB
+  backup_count: 5

@@ -15,12 +15,28 @@ def test_default_config():
 
 
 def test_validate_missing_upstream():
-    """Config without upstream should fail validation."""
+    """Config without upstream host should fail validation."""
     cfg = Config()
     errors = cfg.validate()
     assert any("upstream.host" in e for e in errors)
-    assert any("upstream.username" in e for e in errors)
-    assert any("upstream.password" in e for e in errors)
+
+
+def test_validate_auth_mismatch():
+    """Username and password must both be set or both empty."""
+    cfg = Config()
+    cfg.upstream.host = "smtp.example.com"
+
+    # Both empty — valid (no auth)
+    assert not cfg.validate()
+
+    # Only username set — invalid
+    cfg.upstream.username = "user"
+    errors = cfg.validate()
+    assert any("upstream.username" in e and "upstream.password" in e for e in errors)
+
+    # Both set — valid
+    cfg.upstream.password = "pass"
+    assert not cfg.validate()
 
 
 def test_env_override(tmp_path, monkeypatch):

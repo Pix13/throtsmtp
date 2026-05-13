@@ -23,7 +23,7 @@ class UpstreamConfig:
     port: int = 587
     username: str = ""
     password: str = ""
-    tls: str = "starttls"  # "starttls" or "ssl"
+    tls: str = "starttls"  # "starttls", "ssl", or "" for plain
     timeout: int = 30
 
 
@@ -70,12 +70,16 @@ class Config:
         errors: list[str] = []
         if not self.upstream.host:
             errors.append("upstream.host is required")
-        if not self.upstream.username:
-            errors.append("upstream.username is required")
-        if not self.upstream.password:
-            errors.append("upstream.password is required")
-        if self.upstream.tls not in ("starttls", "ssl"):
-            errors.append("upstream.tls must be 'starttls' or 'ssl'")
+        # Auth is optional — both must be set or both empty
+        if bool(self.upstream.username) != bool(self.upstream.password):
+            errors.append(
+                "upstream.username and upstream.password must both be set "
+                "or both be empty"
+            )
+        if self.upstream.tls not in ("starttls", "ssl", ""):
+            errors.append(
+                "upstream.tls must be 'starttls', 'ssl', or empty string for plain SMTP"
+            )
         if self.throttle.min_delay < 1:
             errors.append("throttle.min_delay must be >= 1")
         if self.throttle.max_delay < self.throttle.min_delay:

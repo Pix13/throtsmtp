@@ -610,7 +610,7 @@ async def test_relay_processes_existing_queue(tmp_path: Path):
 
 @pytest.mark.asyncio
 async def test_multiple_recipients(tmp_path: Path):
-    """Email with multiple recipients is delivered correctly."""
+    """Email with multiple recipients is split into individual deliveries."""
     cfg = _make_config(tmp_path)
     mock_handler = MockUpstreamHandler()
 
@@ -646,11 +646,12 @@ async def test_multiple_recipients(tmp_path: Path):
             msg,
         )
 
-        await wait_for_count(queue, "sent", 1, timeout=10.0)
+        # Each recipient gets its own queue entry and delivery
+        await wait_for_count(queue, "sent", 3, timeout=15.0)
 
-        assert len(mock_handler.deliveries) == 1
-        delivery = mock_handler.deliveries[0]
-        assert set(delivery["rcpt_tos"]) == {"a@t", "b@t", "c@t"}
+        assert len(mock_handler.deliveries) == 3
+        delivered_to = {d["rcpt_tos"][0] for d in mock_handler.deliveries}
+        assert delivered_to == {"a@t", "b@t", "c@t"}
 
     finally:
         ctrl.stop()

@@ -39,20 +39,24 @@ class RelayHandler:
             if not message_id:
                 message_id = f"<{uuid.uuid4()}@{self.config.local.hostname}>"
 
-            # Enqueue
-            email_id, rejected = await self.queue.enqueue(
-                mail_from=mail_from,
-                rcpt_to=rcpt_to,
-                raw_message=raw_message,
-                message_id=message_id,
-            )
+            # Split multi-recipient into one queue entry per recipient
+            rejected = False
+            for recipient in rcpt_to:
+                email_id, is_rejected = await self.queue.enqueue(
+                    mail_from=mail_from,
+                    rcpt_to=[recipient],
+                    raw_message=raw_message,
+                    message_id=message_id,
+                )
+                if is_rejected:
+                    rejected = True
 
             if rejected:
                 return "452 4.2.2 Mailbox full — queue at capacity, try again later"
 
             logger.info(
-                "Received email id=%d from=%s to=%s size=%d bytes",
-                email_id, mail_from, rcpt_to, len(raw_message),
+                "Received email from=%s to=%s size=%d bytes",
+                mail_from, rcpt_to, len(raw_message),
             )
             return "250 2.0.0 OK: message accepted and queued"
 

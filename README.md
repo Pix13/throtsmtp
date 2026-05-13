@@ -216,6 +216,103 @@ This is useful for:
 - Rate limit resets
 - Debugging delivery issues without losing incoming mail
 
+## Running as a systemd Service
+
+The relay can run as an auto-starting daemon via systemd. Choose either a
+**user service** (runs under your account, no root needed) or a
+**system service** (runs as root or a dedicated user, starts before login).
+
+### Option A: User Service (no root required)
+
+A user service runs under your account and starts when you log in.
+
+```bash
+# 1. Install the service file
+mkdir -p ~/.config/systemd/user
+cp systemd/throt-relay.service ~/.config/systemd/user/
+
+# 2. Create the config directory and copy your config
+mkdir -p ~/.config/throtsmtp
+cp config.yaml ~/.config/throtsmtp/
+
+# 3. Ensure the queue database directory exists
+mkdir -p ~/.local/share/throtsmtp
+
+# 4. Update the config to use absolute paths
+#    Edit ~/.config/throtsmtp/config.yaml:
+#      queue.db_path:   /home/YOUR_USER/.local/share/throtsmtp/queue.db
+#      logging.file:    /home/YOUR_USER/.local/share/throtsmtp/relay.log
+
+# 5. Enable and start
+systemctl --user daemon-reload
+systemctl --user enable --now throt-relay
+```
+
+Manage the service:
+
+```bash
+systemctl --user status throt-relay
+systemctl --user restart throt-relay
+journalctl --user -u throt-relay -f
+```
+
+### Option B: System Service (runs at boot, requires root)
+
+A system service starts at boot and runs independently of any user session.
+
+```bash
+# 1. Create a dedicated system user (optional but recommended)
+sudo useradd -r -s /usr/sbin/nologin -m -d /var/lib/throtsmtp throtsmtp
+
+# 2. Install the service file
+sudo cp systemd/throt-relay.service /etc/systemd/system/
+
+# 3. Edit the service file for system mode
+#    Replace the User/Group and path specifiers:
+#
+#    [Service]
+#    User=throtsmtp
+#    Group=throtsmtp
+#    WorkingDirectory=/var/lib/throtsmtp
+#    ExecStart=/usr/local/bin/throt-relay --config /etc/throtsmtp/config.yaml
+#    ReadWritePaths=/var/lib/throtsmtp
+#
+#    Remove ProtectHome and ProtectSystem if your config uses relative paths.
+
+# 4. Create directories and set ownership
+sudo mkdir -p /etc/throtsmtp /var/lib/throtsmtp
+sudo cp config.yaml /etc/throtsmtp/
+sudo chown -R throtsmtp:throtsmtp /var/lib/throtsmtp /etc/throtsmtp
+
+# 5. Update config to use absolute paths
+#    Edit /etc/throtsmtp/config.yaml:
+#      queue.db_path:   /var/lib/throtsmtp/queue.db
+#      logging.file:    /var/lib/throtsmtp/relay.log
+
+# 6. Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable --now throt-relay
+```
+
+Manage the service:
+
+```bash
+sudo systemctl status throt-relay
+sudo systemctl restart throt-relay
+sudo journalctl -u throt-relay -f
+```
+
+### Service file reference
+
+The included `systemd/throt-relay.service` uses systemd path specifiers:
+
+| Specifier | User service resolves to | System service resolves to |
+|-----------|--------------------------|----------------------------|
+| `%B` | `$HOME/.local/bin` | `/usr/bin:/usr/local/bin` |
+| `%h` | `$HOME` | `/root` |
+
+For a system service, replace `%B` and `%h` with absolute paths as shown above.
+
 ## Retry Strategy
 
 | Attempt | Delay Range | Notes |

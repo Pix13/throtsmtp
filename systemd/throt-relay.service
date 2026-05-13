@@ -1,0 +1,23 @@
+[Unit]
+Description=Throttled SMTP Relay Server
+Documentation=https://github.com/Pix13/throtsmtp
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%B/throt-relay --config %h/.config/throtsmtp/config.yaml
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=throt-relay
+
+# Hardening
+NoNewPrivileges=true
+ProtectHome=read-only
+ProtectSystem=strict
+ReadWritePaths=%h/.config/throtsmtp %h/.local/share/throtsmtp
+
+[Install]
+WantedBy=default.target

@@ -50,7 +50,10 @@ cd throtsmtp
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install in development mode (includes test dependencies)
+# Production install (runtime dependencies only)
+pip install .
+
+# Or development mode (includes test dependencies)
 pip install -e ".[test]"
 ```
 
